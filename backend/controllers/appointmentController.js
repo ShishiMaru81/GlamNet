@@ -131,35 +131,59 @@ exports.createAppointment = async (req, res, next) => {
       });
     }
 
-    // Check if slot is available
+    // Check if slot is available and book it atomically
     let slot;
     const isVirtual = typeof scheduleSlotId === 'string' && scheduleSlotId.startsWith('virtual-');
 
     if (isVirtual) {
-      // Handle virtual slot: Create it in DB on the fly
+      // Handle virtual slot: Atomic creation/check
       const startTime = scheduleSlotId.split('-')[1];
 
-      // Calculate end time (2 hours duration to match generator algorithm)
+      // Calculate end time (2 hours duration)
       let [h, m] = startTime.split(':').map(Number);
-      h += 2; // 2 hour slots
+      h += 2;
 
       const endTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-
       const dateObj = new Date(appointmentDateTime);
-      // Ensure dateObj is set to the correct date part (scheduleSlotId doesn't carry date, appointmentDateTime does)
-      // Actually appointmentDateTime is a full ISO date.
-
       const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-      slot = await ScheduleSlot.create({
-        barberId,
-        salonId,
-        date: dateObj,
-        dayOfWeek: days[dateObj.getDay()],
-        startTime,
-        endTime,
-        isBooked: false
-      });
+      // ATOMIC UPSERT: Try to find an existing slot or create one if it doesn't exist.
+      try {
+        slot = await ScheduleSlot.findOneAndUpdate(
+          {
+            barberId,
+            salonId,
+            date: dateObj,
+            startTime: startTime
+          },
+          {
+            $setOnInsert: {
+              barberId,
+              salonId,
+              date: dateObj,
+              dayOfWeek: days[dateObj.getDay()],
+              startTime,
+              endTime,
+              isBooked: false
+            }
+          },
+          { upsert: true, new: true } // Return the document (found or created)
+        );
+      } catch (upsertError) {
+        if (upsertError.code === 11000) {
+          // Race condition: Another request created the slot just now.
+          // Fetch the slot that was just created.
+          slot = await ScheduleSlot.findOne({
+            barberId,
+            salonId,
+            date: dateObj,
+            startTime: startTime
+          });
+        } else {
+          throw upsertError;
+        }
+      }
+
     } else {
       slot = await ScheduleSlot.findById(scheduleSlotId);
     }
@@ -167,19 +191,33 @@ exports.createAppointment = async (req, res, next) => {
     if (!slot) {
       return res.status(404).json({
         success: false,
-        message: 'Schedule slot not found'
+        message: 'Schedule slot not found or could not be created'
       });
     }
 
-    if (slot.isBooked) {
+    // Now securely try to book the slot.
+    // This atomic operation ensures only ONE request succeeds if multiple are trying to book the same slot ID.
+    const bookedSlot = await ScheduleSlot.findOneAndUpdate(
+      { _id: slot._id, isBooked: false },
+      { $set: { isBooked: true } },
+      { new: true }
+    );
+
+    if (!bookedSlot) {
       return res.status(400).json({
         success: false,
         message: 'This time slot is already booked'
       });
     }
 
-    // Verify slot belongs to the selected barber
+    // Use the booked slot for further checks (though we know it belongs to the right barber if we just created it correctly, 
+    // but good to double check for non-virtual consistency)
+    slot = bookedSlot; // Update reference
+
+    // Verify slot belongs to the selected barber (Double check)
     if (slot.barberId.toString() !== barberId) {
+      // Rollback booking if barber mismatch (Unlikely given query, but safety first)
+      await ScheduleSlot.findByIdAndUpdate(slot._id, { isBooked: false });
       return res.status(400).json({
         success: false,
         message: 'Schedule slot does not match the selected barber'
@@ -187,19 +225,26 @@ exports.createAppointment = async (req, res, next) => {
     }
 
     // Create appointment
-    const appointment = await Appointment.create({
-      customerId: customer._id,
-      barberId,
-      salonId,
-      serviceId,
-      scheduleSlotId: slot._id, // Use the real slot ID
-      appointmentDateTime,
-      notes,
-      paymentStatus: 'pending'
-    });
+    let appointment;
+    try {
+      appointment = await Appointment.create({
+        customerId: customer._id,
+        barberId,
+        salonId,
+        serviceId,
+        scheduleSlotId: slot._id, // Use the real slot ID
+        appointmentDateTime,
+        notes,
+        paymentStatus: 'pending'
+      });
+    } catch (createError) {
+      // Rollback the slot booking if appointment creation fails
+      console.error("Appointment creation failed, rolling back slot:", createError);
+      await ScheduleSlot.findByIdAndUpdate(slot._id, { isBooked: false });
+      throw createError; // Rethrow to be caught by main catch block
+    }
 
-    // Mark slot as booked
-    slot.isBooked = true;
+    // Update slot with appointment ID
     slot.appointmentId = appointment._id;
     await slot.save();
 
@@ -247,11 +292,11 @@ exports.createAppointment = async (req, res, next) => {
 
     // Send confirmation email
     const customerEmail = populatedAppointment.customerId?.userId?.email;
-    const customerName = populatedAppointment.customerId?.userId ? 
-      `${populatedAppointment.customerId.userId.firstName} ${populatedAppointment.customerId.userId.lastName}` : 
+    const customerName = populatedAppointment.customerId?.userId ?
+      `${populatedAppointment.customerId.userId.firstName} ${populatedAppointment.customerId.userId.lastName}` :
       'Valued Customer';
-    const barberName = populatedAppointment.barberId?.userId ? 
-      `${populatedAppointment.barberId.userId.firstName} ${populatedAppointment.barberId.userId.lastName}` : 
+    const barberName = populatedAppointment.barberId?.userId ?
+      `${populatedAppointment.barberId.userId.firstName} ${populatedAppointment.barberId.userId.lastName}` :
       'Our Staff';
     const salonName = populatedAppointment.salonId?.name || 'Our Salon';
     const serviceName = populatedAppointment.serviceId?.name || 'Service';

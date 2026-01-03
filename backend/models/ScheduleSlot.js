@@ -41,8 +41,8 @@ const ScheduleSlotSchema = new mongoose.Schema({
   }
 });
 
-// Index for efficient queries
-ScheduleSlotSchema.index({ barberId: 1, date: 1, startTime: 1 });
+// Index for efficient queries and to prevents duplicate slots
+ScheduleSlotSchema.index({ barberId: 1, salonId: 1, date: 1, startTime: 1 }, { unique: true });
 
 module.exports = mongoose.model('ScheduleSlot', ScheduleSlotSchema);
 

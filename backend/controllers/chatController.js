@@ -17,7 +17,7 @@ exports.getChatResponse = async (req, res, next) => {
         // Access your API key as an environment variable
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-        // The Gemini 1.5 models are versatile and work with most use cases
+        // The Gemini models are versatile and work with most use cases
         const model = genAI.getGenerativeModel({ model: "gemini-pro-latest" });
 
         const prompt = `
