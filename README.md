@@ -1,6 +1,6 @@
 # GlamNet - Smart Salon Network System
 
-A smart, AI-assisted web platform designed to connect customers with salons, barbers, and beauty service providers. Built with the MERN stack (MongoDB, Express.js, React.js, Node.js).
+A smart, web platform designed to connect customers with salons, barbers, and beauty service providers. Built with the MERN stack (MongoDB, Express.js, React.js, Node.js).
 
 ## 🎯 Features
 
@@ -200,4 +200,5 @@ This project is created for educational purposes.
 ## 👥 Contributors
 
 Created for Software Engineering Course
+
 
