@@ -1,8 +1,49 @@
 # GlamNet - Smart Salon Network System
 
-A smart, web platform designed to connect customers with salons, barbers, and beauty service providers. Built with the MERN stack (MongoDB, Express.js, React.js, Node.js).
+A smart, AI-assisted platform that connects customers with salons, barbers, and
+beauty service providers. This repository contains **two versions** of the same
+product concept:
 
-## 🎯 Features
+| Path | Stack | Status |
+| --- | --- | --- |
+| [`/backend`](backend/) + [`/frontend`](frontend/) | MERN (MongoDB, Express, React.js web, Node.js) | Original Software Engineering course project — kept as historical reference |
+| [`/mobile`](mobile/) | Expo + TypeScript + Firebase | Active rebuild for React Native / Firebase internship applications |
+
+Do **not** delete the MERN code. The mobile app is a fresh, idiomatic Expo/Firebase
+implementation of the same product (salon booking: customers, salons, appointments,
+reviews, recommendations) — not a line-by-line port of the Express routes.
+
+---
+
+## Mobile app (Expo + Firebase) — primary
+
+See [`mobile/README.md`](mobile/README.md) for full setup details.
+
+```bash
+cd mobile
+npm install
+cp .env.example .env   # then fill Firebase web config values
+npm start              # scan QR with Expo Go
+```
+
+Firebase client keys use `EXPO_PUBLIC_FIREBASE_*` env vars (never commit `.env`).
+
+### Planned migration steps
+
+1. Setup (scaffold) — current
+2. Data model — Mongoose schemas → Firestore + TypeScript types
+3. Authentication — Firebase Auth (email/password)
+4. Customer flow — browse, book, review
+5. Salon flow — dashboard, services/offers CRUD
+6. Cloud Functions — rating aggregate + sentiment on review create
+7. Tests — Jest + Testing Library
+8. Polish + writeup
+
+---
+
+## Original MERN web app (course project)
+
+### Features
 
 - **Smart Recommendation Module**: AI-powered salon and service recommendations
 - **Online Appointment Booking**: Easy booking system with real-time availability
@@ -12,22 +53,12 @@ A smart, web platform designed to connect customers with salons, barbers, and be
 - **Secure Authentication**: JWT-based authentication system
 - **Real-time Updates**: Live schedule updates and notifications
 
-## 🛠️ Tech Stack
+### Tech stack
 
-### Backend
-- Node.js & Express.js
-- MongoDB & Mongoose
-- JWT Authentication
-- Sentiment Analysis (AI)
-- Bcrypt for password hashing
+**Backend:** Node.js, Express.js, MongoDB/Mongoose, JWT, bcrypt, sentiment analysis  
+**Frontend:** React.js, React Router, Axios, TailwindCSS
 
-### Frontend
-- React.js
-- React Router
-- Axios
-- TailwindCSS
-
-## 📦 Installation
+### Installation (MERN)
 
 1. **Clone the repository**
    ```bash
@@ -35,30 +66,17 @@ A smart, web platform designed to connect customers with salons, barbers, and be
    cd GlamNet
    ```
 
-2. **Install backend dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Install frontend dependencies**
-   ```bash
-   cd frontend
-   npm install
-   cd ..
-   ```
-
-   Or use the combined command:
+2. **Install dependencies**
    ```bash
    npm run install-all
    ```
 
-4. **Set up environment variables**
-   
+3. **Set up environment variables**
+
    Create a `.env` file in the root directory:
    ```env
    PORT=5000
    MONGODB_URI=mongodb://localhost:27017/glamnet
-   # Or use MongoDB Atlas: mongodb+srv://username:password@cluster.mongodb.net/glamnet
    JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
    JWT_EXPIRE=7d
    NODE_ENV=development
@@ -69,136 +87,48 @@ A smart, web platform designed to connect customers with salons, barbers, and be
    FRONTEND_URL=http://localhost:3000
    ```
 
-5. **Run the application**
-   
-   Development mode (with nodemon):
+4. **Run the application**
    ```bash
-   npm run dev
-   ```
-   
-   In a separate terminal, start the frontend:
-   ```bash
-   npm run client
+   npm run dev      # backend (nodemon)
+   npm run client   # React web frontend (separate terminal)
    ```
 
-## 📁 Project Structure
+### Project structure (MERN + mobile)
 
 ```
 GlamNet/
-├── backend/
-│   ├── config/
-│   │   └── db.js
-│   ├── models/
-│   │   ├── User.js
-│   │   ├── Customer.js
-│   │   ├── Barber.js
-│   │   ├── Salon.js
-│   │   ├── Appointment.js
-│   │   ├── Service.js
-│   │   ├── Review.js
-│   │   ├── Offer.js
-│   │   ├── ScheduleSlot.js
-│   │   ├── ChatSession.js
-│   │   └── SentimentAnalysis.js
-│   ├── routes/
-│   │   ├── auth.js
-│   │   ├── customers.js
-│   │   ├── salons.js
-│   │   ├── appointments.js
-│   │   ├── reviews.js
-│   │   └── recommendations.js
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   ├── customerController.js
-│   │   ├── salonController.js
-│   │   ├── appointmentController.js
-│   │   ├── reviewController.js
-│   │   └── recommendationController.js
-│   ├── middleware/
-│   │   ├── auth.js
-│   │   └── errorHandler.js
-│   ├── utils/
-│   │   ├── sentimentAnalysis.js
-│   │   └── recommendations.js
-│   └── server.js
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── context/
-│   │   ├── utils/
-│   │   └── App.js
-│   └── package.json
+├── backend/          # Original Express + MongoDB API
+├── frontend/         # Original React.js web client
+├── mobile/           # Expo + TypeScript + Firebase rebuild
 ├── .env.example
 ├── .gitignore
 ├── package.json
 └── README.md
 ```
 
-## 🚀 Usage
+### Usage (MERN)
 
-### Customer Flow
-1. Register/Login
-2. Browse salons
-3. View salon details and services
-4. Select service and time slot
-5. Book appointment
-6. View bookings in dashboard
-7. Add review after completion
+**Customer flow:** Register/Login → browse salons → book → review  
+**Salon staff flow:** Login → dashboard → manage services/offers/schedule → appointments
 
-### Salon Staff Flow
-1. Login
-2. Access salon dashboard
-3. Manage services & offers
-4. Manage schedule
-5. View appointments
+### API endpoints (MERN)
 
-## 🔒 Security Features
+- `POST /api/auth/register` | `POST /api/auth/login` | `GET /api/auth/logout` | `PUT /api/auth/profile`
+- `GET/POST/PUT /api/salons`
+- `GET/POST/PUT/DELETE /api/appointments`
+- `GET/POST/PUT/DELETE /api/reviews`
 
-- Password encryption with bcrypt
-- JWT token-based authentication
-- Input validation
-- Secure API endpoints
-- Protected routes
+### AI features (MERN)
 
-## 📊 API Endpoints
+- Recommendation engine based on history, ratings, and popular services
+- Sentiment analysis on review text (positive / negative / neutral)
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/logout` - Logout user
-- `PUT /api/auth/profile` - Update profile
+---
 
-### Salons
-- `GET /api/salons` - Get all salons
-- `GET /api/salons/:id` - Get salon details
-- `POST /api/salons` - Create salon (admin)
-- `PUT /api/salons/:id` - Update salon
+## License
 
-### Appointments
-- `GET /api/appointments` - Get user appointments
-- `POST /api/appointments` - Create appointment
-- `PUT /api/appointments/:id` - Update appointment
-- `DELETE /api/appointments/:id` - Cancel appointment
+Educational / portfolio use.
 
-### Reviews
-- `GET /api/reviews/salon/:salonId` - Get salon reviews
-- `POST /api/reviews` - Submit review
-- `PUT /api/reviews/:id` - Edit review
-- `DELETE /api/reviews/:id` - Delete review
+## Contributors
 
-## 🤖 AI Features
-
-- **Recommendation Engine**: Suggests salons based on user history, ratings, and popular services
-- **Sentiment Analysis**: Analyzes review text to determine sentiment (positive/negative/neutral)
-
-## 📝 License
-
-This project is created for educational purposes.
-
-## 👥 Contributors
-
-Created for Software Engineering Course
-
-
+Originally created for a Software Engineering course; mobile rebuild in progress.

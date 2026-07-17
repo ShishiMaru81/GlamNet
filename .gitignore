@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 frontend/node_modules/
+mobile/node_modules/
 
 # Environment variables
 .env
@@ -8,6 +9,7 @@ frontend/node_modules/
 .env.development.local
 .env.test.local
 .env.production.local
+mobile/.env
 
 # Logs
 npm-debug.log*
@@ -31,10 +33,16 @@ frontend/build/
 dist/
 *.map
 
+# Expo / React Native
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/expo-env.d.ts
+mobile/ios/
+mobile/android/
+
 # Testing
 coverage/
 
 # Misc
 .cache/
-
-
