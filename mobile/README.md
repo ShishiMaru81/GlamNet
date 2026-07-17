@@ -53,10 +53,49 @@ mobile/
 └── package.json
 ```
 
+## Firestore data model
+
+The original Mongoose schemas are represented by strict interfaces in
+`src/types`. Firestore document IDs are kept outside document data and added to
+client objects with `WithId<T>`.
+
+| Collection     | Type          | Main query pattern                         |
+| -------------- | ------------- | ------------------------------------------ |
+| `users`        | `AppUser`     | document by Firebase Auth UID              |
+| `salons`       | `Salon`       | featured/city/rating salon lists           |
+| `services`     | `Service`     | active services filtered by `salonId`      |
+| `appointments` | `Appointment` | customer or salon bookings ordered by time |
+| `reviews`      | `Review`      | salon reviews ordered by creation time     |
+| `offers`       | `Offer`       | active salon offers within a date range    |
+
+### Mongoose → Firestore tradeoffs
+
+- **User, Customer, and Barber merge into `users`:** Firebase Auth stores
+  credentials, while one role-discriminated profile document stores app data.
+  This removes profile joins and lets security rules authorize salon staff from
+  `salonId` on their user document.
+- **Appointment display snapshots:** customer, salon, staff, and service names
+  plus booked price/duration are copied into each appointment. This preserves
+  booking history when source documents change and avoids multiple reads per
+  appointment card.
+- **Salon rating aggregate:** `averageRating` and `reviewCount` live on the
+  salon document. A Step 6 Cloud Function will maintain them so salon lists do
+  not read every review, deliberately trading extra writes for fewer reads.
+- **Reviews copy customer name:** review feeds can render from one query instead
+  of fetching the author document for every row.
+- **No persisted ScheduleSlot collection:** slots are derived from salon hours,
+  service duration, and existing appointments. Booking will use a transaction
+  to prevent conflicts, avoiding duplicated `isBooked` state that can drift.
+- **Top-level services and offers:** both keep `salonId`, enabling collection
+  queries, indexes, independent CRUD, and simpler cross-salon administration.
+
+Firestore composite indexes and Security Rules will be added alongside the
+features that require their exact query shapes.
+
 ## Migration status
 
 - [x] Step 1 — Expo scaffold + Firebase env wiring
-- [ ] Step 2 — Firestore data model / types
+- [x] Step 2 — Firestore data model / types
 - [ ] Step 3 — Authentication
 - [ ] Steps 4–5 — Customer & salon flows
 - [ ] Step 6 — Cloud Functions

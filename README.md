@@ -30,8 +30,8 @@ Firebase client keys use `EXPO_PUBLIC_FIREBASE_*` env vars (never commit `.env`)
 
 ### Planned migration steps
 
-1. Setup (scaffold) — current
-2. Data model — Mongoose schemas → Firestore + TypeScript types
+1. Setup (scaffold) — complete
+2. Data model — Mongoose schemas → Firestore + TypeScript types — complete
 3. Authentication — Firebase Auth (email/password)
 4. Customer flow — browse, book, review
 5. Salon flow — dashboard, services/offers CRUD
